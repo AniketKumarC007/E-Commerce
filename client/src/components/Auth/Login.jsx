@@ -77,6 +77,7 @@ const Login = () => {
 
         }
         catch(err){
+            // the code is setting the error message to the value of err.message if it exists, and if not, it sets the error message to the generic message 'Something went wrong'
             setError(err.message || 'Something went wrong');
             setErrorOpen(true);
         }
@@ -99,6 +100,7 @@ const Login = () => {
     useEffect(() => {
         if(user){
             navigate(location.state || '/')
+            // console.log("here", location.state);
         }
     }
     , [user, navigate, location.state]);

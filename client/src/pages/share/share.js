@@ -63,8 +63,6 @@ const handleShare = async () => {
   }
 };
 
-
-
   const defaultShareMessage = "Hey, I'm using this App, it has a very cool collection of sneakers! Try it on -> ";
 
   const shareUrl = window.location.href; // You can replace this with your app's URL

@@ -40,33 +40,37 @@ const provider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/eth_
 const connectedWallet = wallet.connect(provider);
 
 // Create a contract instance
-const contract = new ethers.Contract(nike, contractABI, connectedWallet);
+const contract_nike = new ethers.Contract(nike, contractABI, connectedWallet);
+const contract_puma = new ethers.Contract(puma, contractABI, connectedWallet);
+const contract_ads = new ethers.Contract(ads, contractABI, connectedWallet);
+const contract_rbk = new ethers.Contract(rbk, contractABI, connectedWallet);
+const contract_skt = new ethers.Contract(skt, contractABI, connectedWallet);
 
 function Transaction() {
     const [accountNumber, setAccountNumber] = useState('--');
     const [balance, setBalance] = useState(0.0);
     const [decaying, setDecaying] = useState(false);
- 
+
     // Decaying function
     // useEffect(() => {
     //     if (!decaying) {
     //         // Run every 15 days (in milliseconds)
     //         // const decayInterval = 15 * 24 * 60 * 60 * 1000;
-            
+
     //         const decayInterval = 300 * 1000;
     //         console.log('decaying');
 
     //         const decayTimer = setInterval(async () => {
     //             // Calculate the amount to decay (10% of current token balance)
     //             const decayAmount = Math.floor(token * 0.10);
- 
+
     //             if (decayAmount > 0) {
     //                 // Perform the token decay
     //                 const burnTransaction = await contract.burn(address, decayAmount);
- 
+
     //                 // Update token balance
     //                 setToken(token - decayAmount);
- 
+
     //                 // Add the decay transaction to the payments list
     //                 const item1 = {
     //                     hash: burnTransaction.hash,
@@ -75,22 +79,22 @@ function Transaction() {
     //                     comment: 'Token Decay (-10%)',
     //                 };
     //                 setPayments([item1, ...payments]);
- 
+
     //                 console.log("Decayed");
     //             }
     //         }, decayInterval);
- 
+
     //         setDecaying(true);
- 
+
     //         // Clean up the interval when the component unmounts
     //         return () => clearInterval(decayTimer);
     //     }
     // }, [decaying, token, address, payments]);
- 
+
 
     const [transactionIds, setTransactionIds] = useState([]);
 
-    const { address, setAddress, token, setToken, payments, setPayments} = useToken();
+    const { token, setToken, pumaToken, setPumaToken, nikeToken, setNikeToken, adsToken, setAdsToken, rbkToken, setRbkToken, sktToken, setSktToken, address, setAddress, payments, setPayments } = useToken();
     const [errorMessage, setErrorMessage] = useState(null);
     const [connButtonText, setConnButtonText] = useState('Connect Wallet');
     const [loading, setLoading] = useState(false)
@@ -98,10 +102,21 @@ function Transaction() {
         setLoading(true)
         setAddress(newAccount);
         // getUserBalance(newAccount.toString());
-        const balance = await contract.balanceOf(address);
-        console.log(`Balance of tokens at address : ${balance.toString()}`);
+        const balance_nike = await contract_nike.balanceOf(address);
+        const balance_puma = await contract_puma.balanceOf(address);
+        const balance_ads = await contract_ads.balanceOf(address);
+        const balance_rbk = await contract_rbk.balanceOf(address);
+        const balance_skt = await contract_skt.balanceOf(address);
 
+        // const balance = await contract.balanceOf(address);
+        const balance = parseInt(balance_rbk) + parseInt(balance_ads) + parseInt(balance_skt) + parseInt(balance_puma) + parseInt(balance_nike);
+        console.log(`Balance of tokens at address : ${balance.toString()}`);
         setToken(parseInt(balance));
+        setPumaToken(parseInt(balance_puma));
+        setNikeToken(parseInt(balance_nike));
+        setAdsToken(parseInt(balance_ads));
+        setRbkToken(parseInt(balance_rbk));
+        setSktToken(parseInt(balance_skt));
         setLoading(false)
     };
     const connectWalletHandler = () => {
@@ -115,26 +130,26 @@ function Transaction() {
         }
     };
 
-      // Decay effect
-  setInterval(async ()=>{
+    // Decay effect
+    //   setInterval(async ()=>{
 
-    const burnTransaction = await contract.burn(address, token/10);
-    setToken((9*token)/10)
-    console.log("Decaying")
-    const item1 = {
-      hash: burnTransaction.hash,
-      time: new Date().toLocaleString(),
-      value: -parseInt(Math.min(100, parseInt(token))),
-      comment:"Decayed"
-    }
-    setPayments([item1, ...payments])
-    console.log("Decayed")
-}, 300000)
+    //     const burnTransaction = await contract.burn(address, token/10);
+    //     setToken((9*token)/10)
+    //     console.log("Decaying")
+    //     const item1 = {
+    //       hash: burnTransaction.hash,
+    //       time: new Date().toLocaleString(),
+    //       value: -parseInt(Math.min(100, parseInt(token))),
+    //       comment:"Decayed"
+    //     }
+    //     setPayments([item1, ...payments])
+    //     console.log("Decayed")
+    // }, 300000)
 
-    useState(()=>{
+    useState(() => {
         connectWalletHandler()
-        console.log('Onnecting')
-    }, [address, token])
+        console.log('Connecting')
+    }, [address, pumaToken])
 
     // const getUserBalance = (address) => {
     //     window.ethereum.request({ method: 'eth_getBalance', params: [address, 'latest'] })
@@ -156,21 +171,26 @@ function Transaction() {
     //     { name: 'Jane Smith', age: 25, location: 'Los Angeles' , price :40 },
     //     // Add more data rows as needed
     // ];
-    
+
     // const item1 = {
     //     hash: burnTransaction.transactionHash,
     //     time: new Date().now(),
     //     value: -parseInt(Math.min(100, parseInt(token)))
     //   }
-    console.log(payments);
+    // console.log(payments);
+    // console.log(nikeToken);
+    // console.log(pumaToken);
+    // console.log(rbkToken);
+    // console.log(sktToken);a;
+    // console.log(adsToken);
 
     return (
 
-        <div>
+        <div id="tran">
             <div className="walletCard">
-                <h4>{"Connection to MetaMask using window.ethereum methods"}</h4>
-                <Button variant='contained' onClick={connectWalletHandler} disabled={token != 0}>
-                {connButtonText}
+                <h4>{"Connect Your MetaMask Wallet"}</h4>
+                <Button variant='contained' onClick={connectWalletHandler} disabled={nikeToken != 0}>
+                    {connButtonText}
                 </Button>
                 <div className="accountDisplay">
                     <h3>Address: {address}</h3>
@@ -180,58 +200,72 @@ function Transaction() {
             <div className="App">
                 <header className="App-header">
                     <h1>Account Overview</h1>
-                    {
-                        loading ? <CircularProgress /> :
-                        <div className="account-container">
-                        <div className="account-info">
-                            <p className="account-label">Wallet Address</p>
-                            <p className="account-value">{address || "Please connect your wallet"}</p>
+                    {loading ? (
+                        <CircularProgress style={{ color: 'white' }}/>
+                    ) : (
+                        <div>
+                            <div className='top-info'>
+                                <div className="account-info">
+                                    <div className="account-label">Wallet Address</div>
+                                    <div className="account-value">{address || "Please connect your wallet"}</div>
+                                </div>
+                            </div>
+                            <div className='bottom-info'>
+                                <div className="token-info">
+                                    <div className="token-label">Nike Tokens</div>
+                                    <div className="token-value">{nikeToken}</div>
+                                </div>
+                                <div className="token-info">
+                                    <div className="token-label">Puma Tokens</div>
+                                    <div className="token-value">{pumaToken}</div>
+                                </div>
+                                <div className="token-info">
+                                    <div className="token-label">Reebok Tokens</div>
+                                    <div className="token-value">{rbkToken}</div>
+                                </div>
+                                <div className="token-info">
+                                    <div className="token-label">Sketchers Tokens</div>
+                                    <div className="token-value">{sktToken}</div>
+                                </div>
+                                <div className="token-info">
+                                    <div className="token-label">Adidas Tokens</div>
+                                    <div className="token-value">{adsToken}</div>
+                                </div>
+                            </div>
                         </div>
-                        <div className="account-info">
-                            <p className="account-label">Available Tokens</p>
-                            <p className="account-value">{token}</p>
-                        </div>
-                    </div>
-                    }
-                    
-                    <h2 className="transaction-heading">Transaction IDs</h2>
-                    <ul className="transaction-list">
-                        {transactionIds.map(transactionId => (
-                            <li key={transactionId} className="transaction-item">
-                                {transactionId}
-                            </li>
-                        ))}
-                    </ul>
-
-                    {/* <table>
-                        <tr>
-
-                        </tr>
-                    </table> */}
-                    
+                    )}
                 </header>
-                <div className="table-container">
-            <table className="styled-table">
-                <thead>
-                    <tr>
-                        <th>Time</th>
-                        <th>TransactionHash</th>
-                        <th>Comments</th>
-                        <th>Tokens</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {payments.map((row, index) => (
-                        <tr key={index}>
-                            <td>{row.time}</td>
-                            <td>{row.hash}</td>
-                            <td>{row.comment}</td>
-                            <td className={row.value<0 ? 'negative-value': 'positive-value'}>{row.value}</td>
+            </div>
+            
+            <h1 className="transaction-heading">Transaction IDs</h1>
+            <ul className="transaction-list">
+                {transactionIds.map(transactionId => (
+                    <li key={transactionId} className="transaction-item">
+                        {transactionId}
+                    </li>
+                ))}
+            </ul>
+            <div className="table-container">
+                <table className="styled-table">
+                    <thead>
+                        <tr>
+                            <th>Time</th>
+                            <th>TransactionHash</th>
+                            <th>Comments</th>
+                            <th>Tokens</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        {payments.map((row, index) => (
+                            <tr key={index}>
+                                <td>{row.time}</td>
+                                <td>{row.hash}</td>
+                                <td>{row.comment}</td>
+                                <td className={row.value < 0 ? 'negative-value' : 'positive-value'}>{row.value}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

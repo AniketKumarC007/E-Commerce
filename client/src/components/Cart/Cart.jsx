@@ -9,7 +9,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import useToken from '../../hooks/useToken';
 import { Checkbox, FormControlLabel, FormGroup } from "@mui/material";
 import { useNavigate } from 'react-router-dom';
-
+ 
 const { ethers } = require('ethers');
  
 // import { ethers } from 'ethers';
@@ -34,7 +34,11 @@ const provider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/eth_
 const connectedWallet = wallet.connect(provider);
  
 // Create a contract instance
-const contract = new ethers.Contract(nike, contractABI, connectedWallet);
+const contract_nike = new ethers.Contract(nike, contractABI, connectedWallet);
+const contract_puma = new ethers.Contract(puma, contractABI, connectedWallet);
+const contract_ads = new ethers.Contract(ads, contractABI, connectedWallet);
+const contract_rbk = new ethers.Contract(rbk, contractABI, connectedWallet);
+const contract_skt = new ethers.Contract(skt, contractABI, connectedWallet);
  
  
 const Cart = ({setOpen}) => {
@@ -44,19 +48,131 @@ const Cart = ({setOpen}) => {
   const totalPrice = () => {
     let total = 0;
     products.forEach((item) => {
+      // console.log(item);
       total += item.quantity * item.price;
     });
     return total.toFixed(2);
   };
+ 
+  const nikePrice = () => {
+    let nikeTotal = 0;
+    products.forEach((item) => {
+      if(item.title.substring(0, 4) === "Nike"){
+        console.log("Nike");
+        nikeTotal += item.quantity * item.price;
+      }
+    });
+    
+    return nikeTotal.toFixed(2);
+  };
+ 
+  const rbkPrice = () => {
+    let rbkTotal = 0;
+    products.forEach((item) => {
+      if(item.title.substring(0, 6) === "Reebok"){
+        rbkTotal += item.quantity * item.price;
+      }
+    });
+    return rbkTotal.toFixed(2);
+  };
+ 
+  const pumaPrice = () => {
+    let pumaTotal = 0;
+    products.forEach((item) => {
+      if(item.title.substring(0, 4) === "Puma"){
+        pumaTotal += item.quantity * item.price;
+      }
+    });
+    return pumaTotal.toFixed(2);
+  };
+ 
+  const sktPrice = () => {
+    let sktTotal = 0;
+    products.forEach((item) => {
+      if(item.title.substring(0, 7) === "Skechers"){
+        sktTotal += item.quantity * item.price;
+      }
+    });
+    return sktTotal.toFixed(2);
+  };
 
-  const {address, setAddress, token, setToken, payments, setPayments} = useToken();
-  const [applied, setApplied] = useState(true)
+  const adsPrice = () => {
+    let adsTotal = 0;
+    products.forEach((item) => {
+      if(item.title.substring(0, 6) === "ADIDAS"){
+        adsTotal += item.quantity * item.price;
+      }
+    });
+    return adsTotal.toFixed(2);
+  };
+ 
+  // const {address, setAddress, token, setToken, payments, setPayments} = useToken();
+  const { token, setToken, pumaToken, setPumaToken, nikeToken, setNikeToken, adsToken, setAdsToken, rbkToken, setRbkToken, sktToken, setSktToken, address, setAddress, payments, setPayments } = useToken();
+  const [applied, setApplied] = useState(false)
   const navigate=useNavigate();
+  const [discount, setDiscount] = useState(0);
 
 
+  const nikeTotal = nikePrice();
+  const pumaTotal = pumaPrice();
+  const rbkTotal = rbkPrice();
+  const adsTotal = adsPrice();
+  const sktTotal = sktPrice();
+
+
+  const apply = async () =>{
+    const pumaBalance = await contract_puma.balanceOf(address);
+    const adsBalance = await contract_ads.balanceOf(address);
+    const sktBalance = await contract_skt.balanceOf(address);
+    const rbkBalance = await contract_rbk.balanceOf(address);
+    const nikeBalance = await contract_nike.balanceOf(address);
+    console.log('Applid')
+    
+      if(parseInt(nikeTotal)>0){
+        if(parseInt(nikeBalance)){
+          console.log("nike", nikeTotal);
+          setDiscount(discount=>discount + Math.min(100, parseInt(nikeBalance)));
+        }
+      }
+  
+      if(parseInt(pumaTotal)>0){
+        if(parseInt(pumaBalance)){
+          console.log("puma" ,pumaTotal);
+          setDiscount(discount=>discount + Math.min(100, parseInt(pumaBalance)));
+        }
+      }
+  
+      if(parseInt(rbkTotal)>0){
+        if(parseInt(rbkBalance)){
+          console.log("rbk" ,rbkTotal);
+          setDiscount(discount=>discount + Math.min(100, parseInt(rbkBalance)));
+        }
+      }
+  
+      if(parseInt(adsTotal)>0){
+        if(parseInt(adsBalance)){
+          console.log("ads", adsTotal);
+          setDiscount(discount=>discount + Math.min(100, parseInt(adsBalance)));
+        }
+      }
+      
+      // if(sktTotal){
+      //   if(sktBalance){
+      //     setDiscount(discount=>discount + Math.min(100, parseInt(sktBalance)));
+      //   }
+      // }
+  }
+
+  const handleApply = async(e) => {
+    console.log("applying");
+    if(!applied) await apply() 
+    else{
+  setDiscount(0);} 
+    setApplied(applied => !applied)
+  }
 
  
-  const handlePayment = async () => {
+  const handlePayment = async () => { 
     setOpen(false)
     try {
       // const stripe = await loadStripe(
@@ -70,46 +186,190 @@ const Cart = ({setOpen}) => {
         
         
         // always being called.
+
+        const pumaBalance = await contract_puma.balanceOf(address);
+        const adsBalance = await contract_ads.balanceOf(address);
+        const sktBalance = await contract_skt.balanceOf(address);
+        const rbkBalance = await contract_rbk.balanceOf(address);
+        const nikeBalance = await contract_nike.balanceOf(address);
+        
         
         if (applied) {
-          const burnTransaction = await contract.burn(address, Math.min(100, parseInt(token)));
-          console.log(burnTransaction);
-          const item1 = {
-            hash: burnTransaction.hash,
-            time: new Date().toLocaleString(),
-            value: -parseInt(Math.min(100, parseInt(token))),
-            comment: "Burned"
-          };
-          setPayments(prevArray => [item1, ...prevArray]);
-          await new Promise(resolve => setTimeout(resolve, 8000));
+          if(parseInt(nikeTotal)){
+            if(parseInt(nikeBalance)){
+              const burnTransaction = await contract_nike.burn(address, Math.min(100, parseInt(nikeBalance)));
+              console.log(burnTransaction);
+              const item1 = {
+                hash: burnTransaction.hash,
+                time: new Date().toLocaleString(),
+                value: -parseInt(Math.min(100, parseInt(nikeBalance))),
+                comment: "Burned Nike Tokens"
+              };
+              setPayments(prevArray => [item1, ...prevArray]);
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+
+          if(parseInt(pumaTotal)){
+            if(parseInt(pumaBalance)){
+              const burnTransaction = await contract_puma.burn(address, Math.min(100, parseInt(pumaBalance)));
+              console.log(burnTransaction);
+              const item1 = {
+                hash: burnTransaction.hash,
+                time: new Date().toLocaleString(),
+                value: -parseInt(Math.min(100, parseInt(pumaBalance))),
+                comment: "Burned Puma Tokens"
+              };
+              setPayments(prevArray => [item1, ...prevArray]);
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+
+          if(parseInt(rbkTotal)){
+            if(parseInt(rbkBalance)){
+              const burnTransaction = await contract_rbk.burn(address, Math.min(100, parseInt(rbkBalance)));
+              console.log(burnTransaction);
+              const item1 = {
+                hash: burnTransaction.hash,
+                time: new Date().toLocaleString(),
+                value: -parseInt(Math.min(100, parseInt(rbkBalance))),
+                comment: "Burned Reebok Tokens"
+              };
+              setPayments(prevArray => [item1, ...prevArray]);
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+
+          if(parseInt(adsTotal)){
+            if(parseInt(adsBalance)){
+              const burnTransaction = await contract_ads.burn(address, Math.min(100, parseInt(adsBalance)));
+              console.log(burnTransaction);
+              const item1 = {
+                hash: burnTransaction.hash,
+                time: new Date().toLocaleString(),
+                value: -parseInt(Math.min(100, parseInt(adsBalance))),
+                comment: "Burned ADIDAS Tokens"
+              };
+              setPayments(prevArray => [item1, ...prevArray]);
+              await new Promise(resolve => setTimeout(resolve, 5000));
+            }
+          }
+          
+          // if(sktTotal){
+          //   if(sktBalance){
+          //     const burnTransaction = await contract_skt.burn(address, Math.min(100, parseInt(sktBalance)));
+          //     console.log(burnTransaction);
+          //     const item1 = {
+          //       hash: burnTransaction.hash,
+          //       time: new Date().toLocaleString(),
+          //       value: -parseInt(Math.min(100, parseInt(sktBalance))),
+          //       comment: "Burned Skechers Tokens"
+          //     };
+          //     setPayments(prevArray => [item1, ...prevArray]);
+          //     await new Promise(resolve => setTimeout(resolve, 5000));
+          //   }
+          // }
         }
-
-
+ 
+ 
     // Minting
-    const transactionResponse = await contract.mint(address, Math.min(50, parseInt((totalPrice() - Math.min(100, parseInt(token))*10)/100)));
-    console.log("Minting start...");
-    console.log(transactionResponse);
 
-    // Wait for the transaction to be mined and confirmed
-    const receipt = await transactionResponse.wait();
-    const balance = await contract.balanceOf(address);
-    setToken(parseInt(balance));
+    if(parseInt(nikeTotal)){
+      const transactionResponse = await contract_nike.mint(address, Math.min(50, parseInt((nikeTotal - Math.min(100, parseInt(nikeBalance))*10)/100)));
+      console.log("Minting start...");
+      console.log(transactionResponse);
+  
+      // Wait for the transaction to be mined and confirmed
+      const receipt = await transactionResponse.wait();
+      const balance = await contract_nike.balanceOf(address);
+      setNikeToken(parseInt(balance));
 
-    console.log('Transaction receipt:', receipt);
+      console.log('Transaction receipt:', receipt);
+  
+      const item2 = {
+        hash:transactionResponse.hash,
+        time: new Date().toLocaleString(),
+        value: Math.min(50, parseInt((nikeTotal - Math.min(100, parseInt(nikeBalance))*10)/100)),
+        comment: "Minted Nike Token"
+      };
+  
+      setPayments(prevArray => [item2, ...prevArray]);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+    if(parseInt(pumaTotal)){
+      const transactionResponse = await contract_puma.mint(address, Math.min(50, parseInt((pumaTotal - Math.min(100, parseInt(pumaBalance))*10)/100)));
+      console.log("Minting start...");
+      console.log(transactionResponse);
+  
+      // Wait for the transaction to be mined and confirmed
+      const receipt = await transactionResponse.wait();
+      const balance = await contract_puma.balanceOf(address);
+      setPumaToken(parseInt(balance));
 
-    const item2 = {
-      hash:transactionResponse.hash,
-      time: new Date().toLocaleString(),
-      value: Math.min(50, parseInt((totalPrice() - Math.min(100, parseInt(token))*10)/100)),
-      comment: "Minted"
-    };
+      console.log('Transaction receipt:', receipt);
+  
+      const item2 = {
+        hash:transactionResponse.hash,
+        time: new Date().toLocaleString(),
+        value: Math.min(50, parseInt((pumaTotal - Math.min(100, parseInt(pumaBalance))*10)/100)),
+        comment: "Minted Puma Token"
+      };
+  
+      setPayments(prevArray => [item2, ...prevArray]);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
 
-    setPayments(prevArray => [item2, ...prevArray]);
+    if(parseInt(adsTotal)){
+      const transactionResponse = await contract_ads.mint(address, Math.min(50, parseInt((adsTotal - Math.min(100, parseInt(adsBalance))*10)/100)));
+      console.log("Minting start...");
+      console.log(transactionResponse);
+  
+      // Wait for the transaction to be mined and confirmed
+      const receipt = await transactionResponse.wait();
+      const balance = await contract_ads.balanceOf(address);
+      setAdsToken(parseInt(balance));
 
+      console.log('Transaction receipt:', receipt);
+  
+      const item2 = {
+        hash:transactionResponse.hash,
+        time: new Date().toLocaleString(),
+        value: Math.min(50, parseInt((adsTotal - Math.min(100, parseInt(adsBalance))*10)/100)),
+        comment: "Minted ADIDAS Token"
+      };
+  
+      setPayments(prevArray => [item2, ...prevArray]);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+
+    if(parseInt(rbkTotal)){
+      const transactionResponse = await contract_rbk.mint(address, Math.min(50, parseInt((rbkTotal - Math.min(100, parseInt(rbkBalance))*10)/100)));
+      console.log("Minting start...");
+      console.log(transactionResponse);
+  
+      // Wait for the transaction to be mined and confirmed
+      const receipt = await transactionResponse.wait();
+      const balance = await contract_rbk.balanceOf(address);
+      setRbkToken(parseInt(balance));
+
+      console.log('Transaction receipt:', receipt);
+  
+      const item2 = {
+        hash:transactionResponse.hash,
+        time: new Date().toLocaleString(),
+        value: Math.min(50, parseInt((rbkTotal - Math.min(100, parseInt(rbkBalance))*10)/100)),
+        comment: "Minted Reebok Token"
+      };
+  
+      setPayments(prevArray => [item2, ...prevArray]);
+      await new Promise(resolve => setTimeout(resolve, 5000));
+    }
+    
+ 
     const res = await makeRequest.post("/orders", {
       products,
     });
-
+ 
       // navigate("/")
  
     } catch (err) {
@@ -141,8 +401,8 @@ const Cart = ({setOpen}) => {
         <div>₹{totalPrice()}</div>
         {
           applied && <>
-            <div> - ₹{Math.min(100, parseInt(token))*10}</div>
-            <div>₹{totalPrice() - Math.min(100, parseInt(token))*10}</div>
+            <div> - ₹{discount*10}.00</div>
+            <div>₹{totalPrice() - discount*10}.00</div>
           </>
         }
         </div>
@@ -150,9 +410,9 @@ const Cart = ({setOpen}) => {
         
       </div>
       <FormGroup>
-      <FormControlLabel control={<Checkbox value={applied} onClick={()=>setApplied(!applied)} defaultChecked />} label="Apply SneaKoins" />
+      <FormControlLabel control={<Checkbox value={applied} onClick={handleApply} />} label="Apply SneaKoins" />
     </FormGroup>
-      <button onClick={handlePayment}>PROCEED TO CHECKOUT</button>
+      {totalPrice() != 0 ?  <button onClick={handlePayment} >PROCEED TO CHECKOUT</button> : <></>}
       <span className="reset" onClick={() => dispatch(resetCart())}>
         Reset Cart
       </span>
@@ -161,7 +421,7 @@ const Cart = ({setOpen}) => {
 };
  
 export default Cart;
-
+ 
 // const { ethers } = require('ethers');
  
 // // import { ethers } from 'ethers';
@@ -181,7 +441,7 @@ export default Cart;
  
 // // Set up the provider (Ethereum node)
 // // const provider = new ethers.providers.JsonRpcProvider('https://rinkeby.infura.io/v3/YOUR_INFURA_PROJECT_ID');
-
+ 
 // const provider = new ethers.providers.JsonRpcProvider('https://rpc.ankr.com/eth_goerli');
  
 // // Connect the wallet to the provider
